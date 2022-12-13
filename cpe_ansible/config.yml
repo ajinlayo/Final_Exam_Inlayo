@@ -1,0 +1,29 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: Update CentOS
+    dnf:
+      update_cache: yes
+      name: "*"
+      state: latest
+    when: ansible_distribution == "CentOS"
+
+
+  - name: Ubuntu Update
+    tags: always
+    apt:
+      update_cache: yes
+      upgrade: dist
+
+- hosts: Ubuntu
+  become: true
+  roles:
+    - Ubuntu
+
+- hosts: CentOS
+  become: true
+  roles:
+    - CentOS

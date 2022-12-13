@@ -1,0 +1,87 @@
+- name: Pre-requisites Installations for Nagios
+  tags: Ubuntu_packs
+  apt:
+    name:
+      - wget
+      - unzip
+      - curl
+      - openssl
+      - build-essential
+      - libgd-dev
+      - libssl-dev
+      - libapache2-mod-php8.1
+      - php-gd
+      - php
+      - apache2
+      - dc
+      - make
+      - snmp
+      - libnet-snmp-perl
+      - autoconf
+      - gettext
+      - python3
+      - python3-pip
+    state: latest
+
+- name: Retrieve Download Nagios Core
+  unarchive:
+    src: https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.6.tar.gz
+    dest: /tmp
+    remote_src: yes
+    mode: 0777
+    owner: root
+    group: root
+
+- name: Extract and Install Nagios Core
+  shell:
+    cd /tmp/nagioscore-**
+    ./configure
+    sudo make all
+    sudo make install-groups-users
+    sudo usermod -a -G www-data
+    sudo make install
+    sudo make install-init
+    sudo make install-commandmode
+    sudo make install-config
+    sudo make install-webconf
+    sudo a2enmod rewrite
+    sudo a2enmod cgi
+
+- name: Retrieve and Download Nagios-Plugins
+  unarchive:
+    src: https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
+    dest: /tmp
+    remote_src: yes
+    mode: 0777
+    owner: root
+    group: root
+
+- name: Extract and Install Nagios-Plugins
+  shell:
+    cd /tmp/nagios-plugins*
+    sudo ./tools/setup
+    sudo ./configure --with-nagios-user=nagios --with-nagios-group=nagios --with-openssl
+    sudo make
+    sudo make install
+
+- name: Install Passlib
+  pip:
+    name: passlib
+
+- name: Create User
+  community.general.htpasswd:
+    path: /usr/local/nagios/etc/htpasswd.users
+    name: admin
+    password: admin
+
+- name: Restart Apache2
+  service:
+    name: apache2
+    state: restarted
+    enabled: true
+
+- name: Restart MariaDB
+  service:
+    name: mariadb
+    state: restarted
+    enabled: true
